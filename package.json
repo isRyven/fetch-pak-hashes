@@ -1,0 +1,13 @@
+{
+  "name": "fetch-pak-hashes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./app.js --input files.txt --output output.txt"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
