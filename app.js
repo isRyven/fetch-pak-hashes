@@ -5,6 +5,7 @@ const util = require('util');
 const ZipEntriesReader = require('./zip.js');
 const crypto = require('crypto');
 const readFile = util.promisify(fs.readFile);
+const Path = require('path');
 
 let OUTPUT = "./output.txt";
 
@@ -21,7 +22,7 @@ class PackEntries extends ZipEntriesReader {
 				const fileName = entry.fileName.toString(); 
 				if (fileName.endsWith('.pk3')) {
 					try {
-						this.push(await this._processPak(fileName, entry.data));
+						this.push(await this._processPak(Path.basename(fileName), entry.data));
 					}
 					catch (err) {
 						console.error(err);
