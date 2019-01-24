@@ -108,22 +108,28 @@ class ZipEntriesReader extends Transform {
     async _transform(chunk, encoding, next) {
         let entries = [];
         // main loop
-        for (let entry of this.getNextEntry(chunk)) {
-            /*  we only need local file headers, because they contain all data we need
-                hence we stop read once we hit central directory */
-            if (entry.signature == Signatures.LocalFileHeader) {
-                entries.push(entry);
+        try {
+            for (let entry of this.getNextEntry(chunk)) {
+                /*  we only need local file headers, because they contain all data we need
+                    hence we stop read once we hit central directory */
+                if (entry.signature == Signatures.LocalFileHeader) {
+                    entries.push(entry);
+                }
+                else {
+                    this.end();
+                    break;
+                }
             }
-            else {
-                this.end();
-                break;
+            // we have data to process
+            if (entries.length) {
+                await this.process(entries);
             }
+            next();
         }
-        // we have data to process
-        if (entries.length) {
-            await this.process(entries);
+        catch (err) {
+            this.emit('error', err);
+            this.end();
         }
-        next();
     }
 
     * getNextEntry(chunk) {

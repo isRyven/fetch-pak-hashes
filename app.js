@@ -7,7 +7,6 @@ const crypto = require('crypto');
 const readFile = util.promisify(fs.readFile);
 
 let OUTPUT = "./output.txt";
-let INPUT = "./files.txt";
 
 class PackEntries extends ZipEntriesReader {
 
@@ -73,15 +72,18 @@ class FileFetcher {
 	_handleResponse(response) {
 		return new Promise((resolve, reject) => {
 			const result = [];
-			response.pipe(new PackEntries()).on('data', (data) => result.push(data));
-			response.on('error', err => reject(err));
-			response.on('close', () => resolve(result));
+			const responseParser = new PackEntries();
+			responseParser.on('data', (data) => result.push(data));
+			responseParser.on('finish', () => resolve(result)); 
+			responseParser.on('error', (err) => reject(err));
+			response.pipe(responseParser);
+			response.on('error', (err) => reject(err));
 		});
 	}
 }
 
 async function main() {
-	const [inputPath, outputPath] = processArguments(process.argv);
+	const [inputPath, outputPath, showErrors] = processArguments(process.argv);
 	console.log(`Loading list from ${inputPath}, saving result in ${outputPath} ...`);
 	const contents = (await readFile(inputPath)).toString('utf8');
 	const fileEntries = contents.split('\n');
@@ -89,16 +91,23 @@ async function main() {
 	console.time('Fetching');
 	for (let fileEntry of fileEntries) {
 		const [fileName, fileUrl] = fileEntry.split(/\s(?=https)/);
-		process.stdout.write(`    fetching ${fileName} ...`);
+		console.log(`    fetching ${fileName} ...`);
 		const fetcher = new FileFetcher({ url: fileUrl });
 		try {
 			const hashes = await fetcher.fetch();
-			if (hashes.length) output.write(Buffer.concat(hashes));
-			process.stdout.write(' [done]\n');
+			if (hashes.length) {
+				for (let hash of hashes) {
+					console.log(`        ${hash.toString('ascii').split(/\s/)[0]}`);
+				}
+				output.write(Buffer.concat(hashes));
+			}
+			else {
+				console.log('        no pk3 files found');
+			}
 		}
 		catch (err) {
-			// console.log(err);
-			process.stdout.write(' [fail]\n');
+			if (showErrors) console.log(err);
+			console.log('       failed');
 		}
 	}
 	console.log('The task is finished.');
@@ -106,8 +115,9 @@ async function main() {
 }
 
 function processArguments(cmdline) {
-	let inputPath = INPUT;
+	let inputPath = "";
 	let outputPath = OUTPUT;
+	let showErrors = false;
 	let args = cmdline.slice(2);
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -121,8 +131,29 @@ function processArguments(cmdline) {
 				outputPath = args[i + 1];
 			}
 		}
+		else if (arg === "--errors") {
+			showErrors = true;
+		}
 	}
-	return [inputPath, outputPath];
+
+	if (!inputPath) {
+		const help = [
+			'usage: app.js --input <list-path> [--output <output-path>] [--errors]',
+			'example: $ node ./app.js --input files-maps.txt --output filehashes.txt',
+			'options:',
+			'  --input   input file path containing the list of download links',
+			'  --ouput   output file path, where the result is going to be stored, defaults to output.txt',
+			'  --errors  prints all errors, that are usually skipped'
+		];
+		console.log(help.join('\n'));
+		process.exit(0);
+	}
+
+	return [inputPath, outputPath, showErrors];
 }
 
 main();
+
+process.on('unhandledRejection', error => {
+	console.log('unhandledRejection', error.message);
+});
