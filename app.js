@@ -90,7 +90,7 @@ async function main() {
 	const output = fs.createWriteStream(outputPath, { flags: 'a' });
 	console.time('Fetching');
 	for (let fileEntry of fileEntries) {
-		const [fileName, fileUrl] = fileEntry.split(/\s(?=https)/);
+		const [fileName, fileUrl] = fileEntry.split(/\s(?=http)/);
 		console.log(`    fetching ${fileName} ...`);
 		const fetcher = new FileFetcher({ url: fileUrl });
 		try {
