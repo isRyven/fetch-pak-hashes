@@ -39,7 +39,7 @@ class LocalFileHeaderParser {
             return false;
         }
         if (buffer.readUInt32BE() != Signatures.LocalFileHeader) {
-            throw new Error('incorrect signature: ' + buffer.slice(0, 4));
+            throw new Error('incorrect signature: ' + buffer.slice(0, 4).readUInt32LE().toString(16));
         }
         let entry = this.newEntryObject();
         entry.version = buffer.readUInt16LE(4);
@@ -92,7 +92,7 @@ class ZipEntryParser {
         case Signatures.EndCentralDirectory:
             return {signature: Signatures.EndCentralDirectory}; // Not implemented
         default:
-            throw new Error('unsupported entry signature: ' + buffer.slice(0, 4));
+            throw new Error('unsupported entry signature: ' + buffer.slice(0, 4).readUInt32LE().toString(16));
         }
     }
 }
