@@ -1,3 +1,4 @@
 output.txt
-files-test.txt
+files-test*.txt
 logs/log-*
+.vscode

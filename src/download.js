@@ -1,34 +1,46 @@
 const http = require('http');
 const https = require('https');
+const URL = require('url');
+
+const headers = {
+    'accept': 'application/octet-stream',
+    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'
+};
 
 module.exports = function download(url, wstream, progress = () => {}, accepts = () => true) {
-  return new Promise((resolve, reject) => {
-    let protocol = /^https:/.exec(url) ? https : http;
+    return new Promise(function (resolve, reject) {
+        let protocol = /^https:/.exec(url) ? https : http;
 
-    progress(0, 0);
+        const processRequest = (res) => {
+            if (!accepts(res.headers['content-type'])) {
+                reject(new Error(`Not acceptable type: "${res.headers['content-type']}"`));
+                return;
+            }
+            let total = parseInt(res.headers['content-length'], 10) || 0;
+            let length = 0;
+            res.pipe(wstream);
+            res.on('data', (data) => {
+                length += data.length;
+                progress(length, total);
+            });
+            res.on('progress', progress);
+            res.on('error', reject);
+            res.on('end', resolve);
+        };
 
-    protocol
-        .get(url, { headers: { accept: 'application/octet-stream' } }, (res1) => {
-            protocol = /^https:/.exec(res1.headers.location) ? https : http;
-            protocol
-                .get(res1.headers.location, (res2) => {
-                    if (!accepts(res2.headers['content-type'])) {
-                        reject(new Error(`Not acceptable type: "${res2.headers['content-type']}"`));
-                        return;
-                    }
-                    let total = parseInt(res2.headers['content-length'], 10) || 0;
-                    let length = 0;
-                    res2.pipe(wstream);
-                    res2.on('data', (data) => {
-                        length += data.length;
-                        progress(length, total);
-                    });
-                    res2.on('progress', progress);
-                    res2.on('error', reject);
-                    res2.on('end', resolve);
-                })
-                .on('error', reject);
-        })
-        .on('error', reject);
+        progress(0, 0);
+        protocol
+            .get(url, { headers }, (res1) => {
+                protocol = /^https:/.exec(res1.headers.location) ? https : http;
+                if (res1.headers.location) {
+                    protocol
+                        .get(res1.headers.location, { headers }, processRequest)
+                        .on('error', reject);
+                }
+                else {
+                    processRequest(res1);
+                }
+            })
+            .on('error', reject);
     });
 }

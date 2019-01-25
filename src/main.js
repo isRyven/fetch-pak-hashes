@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const Path = require('path');
 const EventEmitter = require('events');
 const Utils = require('util');
+const { PassThrough } = require('stream');
 
 const download = require('./download');
 const ZipEntriesReader = require('./zip.js');
@@ -85,7 +86,40 @@ class ZipFetcher extends EventEmitter {
 					url,
 					reader,
 					(progress, total) => this.emit('progress', { progress, total }),
-					(type) => type === 'application/zip' || type === "application/octet-stream"
+					(type) => type === 'application/zip' || type === "application/octet-stream" || !type
+				);
+			}
+			catch (err) {
+				reject(err);
+			}
+		});
+	}
+}
+
+class FileFetcher extends EventEmitter {
+	constructor({ url, name }) {
+		super();
+		this._url = url;
+		this._name = name;
+	}
+
+	async fetch() {
+		return await this._download(this._url);
+	}
+
+	_download(url) {
+		return new Promise(async (resolve, reject) => {
+			const hasher = crypto.createHash('sha1');
+			const reader = new PassThrough();
+			reader.on('data', (data) => hasher.update(data));
+			reader.on('finish', () => resolve([Buffer.from(`${this._name} ${hasher.digest('hex')}\n`)]));
+			reader.on('error', (err) => reject(err));
+			try {
+				await download(
+					url,
+					reader,
+					(progress, total) => this.emit('progress', { progress, total }),
+					(type) =>  type === 'application/zip' || type === "application/octet-stream" || !type
 				);
 			}
 			catch (err) {
@@ -190,7 +224,13 @@ async function main() {
 		if (!fileEntry) continue;
 		
 		const [fileName, fileUrl] = fileEntry.split(/\s(?=http)/);
-		let fetcher = new ZipFetcher({ url: fileUrl });
+		let fetcher;
+		if (fileName.toLowerCase().endsWith('.zip')) {
+			fetcher = new ZipFetcher({ url: fileUrl });
+		}
+		else {
+			fetcher = new FileFetcher({ url: fileUrl, name: fileName });
+		}
 		
 		fetcher.addListener('progress', ({ progress, total }) => drawProgress(progress, total));
 		
