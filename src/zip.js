@@ -122,7 +122,7 @@ class ZipEntriesReader extends Transform {
             }
             // we have data to process
             if (entries.length) {
-                await this.process(entries);
+                this.process(entries);
             }
             next();
         }

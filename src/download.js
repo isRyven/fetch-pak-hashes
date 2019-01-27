@@ -12,8 +12,12 @@ module.exports = function download(url, wstream, progress = () => {}, accepts = 
         let protocol = /^https:/.exec(url) ? https : http;
 
         const processRequest = (res) => {
+            if (res.statusCode !== 200) {
+                reject(`Server responded with the status code "${res.statusCode}" (remove?)`);
+                return;
+            }
             if (!accepts(res.headers['content-type'])) {
-                reject(new Error(`Not acceptable type: "${res.headers['content-type']}"`));
+                reject(`Not acceptable type: "${res.headers['content-type']}" (remove?)`);
                 return;
             }
             let total = parseInt(res.headers['content-length'], 10) || 0;

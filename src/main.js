@@ -41,23 +41,19 @@ class PakEntriesReader extends ZipEntriesReader {
 	constructor(options) {
 		super(options);
 	}
-	async process(entries) {
+	process(entries) {
 		for (let entry of entries) {
 			if (entry.crc32.readInt32LE() != 0) {
 				const fileName = entry.fileName.toString(); 
 				if (fileName.endsWith('.pk3')) {
-					this.push(await this._processPak(Path.basename(fileName), entry.data));
+					this.push(this._processPak(Path.basename(fileName), entry.data));
 				}
 			}
 		}
 	}
 	_processPak(name, data) {
-		return new Promise((resolve, reject) => {
-			zlib.inflateRaw(data, (err, buffer) => {
-				if (err) return reject(err);
-				resolve(Buffer.from(this._generateEntry(name, buffer)));
-			});
-		});
+		const buffer = zlib.inflateRawSync(data);
+		return Buffer.from(this._generateEntry(name, buffer))
 	}
 	_generateEntry(name, buffer) {
 		return `${name} ${crypto.createHash('sha1').update(buffer).digest('hex')}\n`;
@@ -266,7 +262,7 @@ async function main() {
 	log(GENERAL, `Found pk3: ${BRIGHTGREEN}${numAdded}${RESET}`);
 	log(GENERAL, `Failed: ${BRIGHTRED}${numFailed}${RESET} / ${BRIGHTGREEN}${fileEntries.length}${RESET}`);
 	for (let failedItem of failedList) {
-		log(GENERAL, `${failedItem.name} ${failedItem.url}`);
+		log(GENERAL, `${RED}${failedItem.name}${RESET} ${failedItem.url}`);
 		log(GENERAL, failedItem.reason);
 		log(GENERAL, `----------------------------------------\n`);
 	}

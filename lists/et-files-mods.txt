@@ -127,6 +127,5 @@ tjmod_1-6-4.zip https://drive.google.com/uc?id=1OU0radriqdekx10c00R1U8SjbTjyVHIN
 tjmod_1-6-5.zip https://drive.google.com/uc?id=1pFM9WsuYAUPGZijmEqiva6HO8BbdAPMg&export=download
 war_factory_v5.zip https://drive.google.com/uc?id=1OFTsaBZuzSXYcpDq03rMef_Uy-tOH8MJ&export=download
 wegeinmod_v3-5.zip https://drive.google.com/uc?id=11-3uRINlNQUAMTvzoU9CXQtsYHpoUIta&export=download
-whaleclient_1-4_b1.zip https://drive.google.com/uc?id=1m132a7NokVdwN0I_sdJoX6jsmhS05Tuv&export=download
 wolfadmin-1.0.1.zip https://drive.google.com/uc?id=1ArH7Q6yTodO3HyJNxMXogdILx8a06M-6&export=download
 x-lab_final.0.1.0.zip https://drive.google.com/uc?id=1Oanrwnx6Ar4JmcrD3bQeAJq5wvLQbdkk&export=download
